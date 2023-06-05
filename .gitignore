@@ -1,0 +1,11 @@
+last_repertoire/
+
+# Image files
+*.png
+*.jpg
+*.jpeg
+*.tiff
+
+# Miscellaneous
+*.csv
+

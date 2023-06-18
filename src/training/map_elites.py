@@ -10,6 +10,7 @@ from qdax.core.emitters.emitter import EmitterState
 from qdax.core.emitters.standard_emitters import MixingEmitter
 from qdax.core.map_elites import MAPElites
 from qdax.core.containers.mapelites_repertoire import (
+    MapElitesRepertoire,
     compute_cvt_centroids,
 )
 from qdax import environments
@@ -23,7 +24,6 @@ from qdax.core.emitters.mutation_operators import isoline_variation
 from qdax.core.emitters.ma_standard_emitters import MultiAgentMixingEmitter
 from qdax.types import (
     EnvState,
-    Genotype,
     Params,
     RNGKey,
 )
@@ -128,15 +128,12 @@ def make_policy_network_play_step_fn(
         Play an environment step and return the updated state and the transition.
         """
         obs = env.obs(env_state)  # Dict of agent observations
-        agent_actions = jnp.stack(
-            [
-                policy_network.apply(policy_params, agent_obs)
-                for policy_network, policy_params, agent_obs in zip(
-                    policy_networks.values(), policy_params_list, obs.values()
-                )
-            ],
-            axis=0,
-        )
+        agent_actions = {
+            agent_idx: policy_network.apply(policy_params, agent_obs)
+            for (agent_idx, policy_network), policy_params, agent_obs in zip(
+                policy_networks.items(), policy_params_list, obs.values()
+            )
+        }
 
         state_desc = env_state.info["state_descriptor"]
         next_state = env.step(env_state, agent_actions)
@@ -337,7 +334,7 @@ def prepare_map_elites(
 
 def run_training(
     map_elites: MAPElites,
-    repertoire: Genotype,
+    repertoire: MapElitesRepertoire,
     emitter_state: EmitterState,
     num_iterations: int,
     log_period: int,
@@ -381,3 +378,5 @@ def run_training(
                 all_metrics[key] = value
 
         wandb.log(logged_metrics, step=1 + i * log_period)
+
+    return repertoire, emitter_state, random_key, all_metrics

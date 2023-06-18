@@ -2,6 +2,7 @@ import jax
 import os
 from src.utils.arguments import load_config, parse_arguments, merge_configs
 from src.utils.logging import init_wandb
+from src.visualization.visualize import plot_2d_map
 from src.training.map_elites import (
     run_training,
     prepare_map_elites,
@@ -35,7 +36,15 @@ def main():
     )
 
     # Run the training
-    run_training(map_elites, repertoire, emitter_state, random_key=random_key, **config)
+    repertoire, emitter_state, random_key, all_metrics = run_training(
+        map_elites, repertoire, emitter_state, random_key=random_key, **config
+    )
+
+    # Plot the results
+    plot_2d_map(
+        repertoire=repertoire,
+        **config,
+    )
 
 
 if __name__ == "__main__":

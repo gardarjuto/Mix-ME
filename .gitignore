@@ -100,3 +100,9 @@ qdax-env/
 
 # Miscellaneous
 *.csv
+
+# Wandb
+wandb/
+
+# YAML
+*.yaml

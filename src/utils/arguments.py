@@ -8,6 +8,7 @@ DEFAULT_CONFIG = {
     # Logging
     "experiment_name": "DEFAULT",
     "log_period": 10,
+    "wandb_mode": "offline",
     # Environment
     "env_name": "ant_omni",
     "multiagent": False,
@@ -22,6 +23,7 @@ DEFAULT_CONFIG = {
     "num_centroids": 1024,
     "min_bd": 0.0,
     "max_bd": 1.0,
+    "k_mutations": 1,
 }
 
 
@@ -68,6 +70,11 @@ def parse_arguments():
         "--log_period",
         type=int,
         help="number of iterations between each logging",
+    )
+    parser.add_argument(
+        "--wandb_mode",
+        type=str,
+        help="mode of WandB",
     )
 
     # Environment
@@ -134,7 +141,11 @@ def parse_arguments():
         type=float,
         help="maximum bound of the behavior descriptor",
     )
-
+    parser.add_argument(
+        "--k_mutations",
+        type=int,
+        help="number of agents to mutate each iteration",
+    )
     return parser.parse_args()
 
 

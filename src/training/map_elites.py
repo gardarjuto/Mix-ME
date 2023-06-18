@@ -168,6 +168,7 @@ def prepare_map_elites_multiagent(
     num_centroids: int,
     min_bd: float,
     max_bd: float,
+    k_mutations: int,
     random_key: KeyArray,
     **kwargs,
 ):
@@ -220,7 +221,7 @@ def prepare_map_elites_multiagent(
         variation_percentage=1.0,
         batch_size=batch_size,
         num_agents=num_agents,
-        agents_to_mutate=1,
+        agents_to_mutate=k_mutations,
     )
 
     # Instantiate MAP-Elites

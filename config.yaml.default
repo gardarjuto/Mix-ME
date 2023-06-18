@@ -5,6 +5,7 @@ seed: 42
 # Logging
 log_period: 10
 experiment_name: "test"
+wandb_mode: "disabled"
 
 # Environment
 env_name: "ant_omni"
@@ -21,3 +22,4 @@ num_init_cvt_samples: 50000
 num_centroids: 1024
 min_bd: -5.0
 max_bd: 5.0
+k_mutations: 1

@@ -7,4 +7,5 @@ def init_wandb(config):
         config=config,
         save_code=True,
         name=config.get("experiment_name"),
+        mode=config.get("wandb_mode"),
     )

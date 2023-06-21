@@ -5,7 +5,7 @@ from typing import Callable
 import jax
 import jax.numpy as jnp
 from jax.random import KeyArray
-from brax.envs import Env, State
+from brax.envs import Env
 from qdax.core.emitters.emitter import EmitterState
 from qdax.core.emitters.standard_emitters import MixingEmitter
 from qdax.core.map_elites import MAPElites
@@ -34,19 +34,15 @@ from qdax.utils.metrics import default_qd_metrics
 import wandb
 
 
-def init_env(env_name: str, episode_length: int):
-    pass
-
-
 def init_multiple_policy_networks(
     env: MultiAgentBraxWrapper,
-    policy_hidden_layer_sizes: tuple[int, ...],
-):
+    policy_hidden_layer_sizes: list[int],
+) -> dict[int, MLP]:
     action_sizes = env.get_action_sizes()
 
     policy_networks = {
         agent_idx: MLP(
-            layer_sizes=policy_hidden_layer_sizes + (action_size,),
+            layer_sizes=tuple(policy_hidden_layer_sizes) + (action_size,),
             kernel_init=jax.nn.initializers.lecun_uniform(),
             final_activation=jnp.tanh,
         )
@@ -55,13 +51,13 @@ def init_multiple_policy_networks(
     return policy_networks
 
 
-def init_single_policy_network(
-    env: Env,
-    policy_hidden_layer_sizes: tuple[int, ...],
-):
-    policy_layer_sizes = policy_hidden_layer_sizes + (env.action_size,)
+def init_policy_network(
+    policy_hidden_layer_sizes: list[int],
+    action_size: int,
+) -> MLP:
+    layer_sizes = tuple(policy_hidden_layer_sizes) + (action_size,)
     policy_network = MLP(
-        layer_sizes=policy_layer_sizes,
+        layer_sizes=layer_sizes,
         kernel_init=jax.nn.initializers.lecun_uniform(),
         final_activation=jnp.tanh,
     )
@@ -115,25 +111,32 @@ def init_environment_states(
 
 def make_policy_network_play_step_fn(
     env: MultiAgentBraxWrapper,
-    policy_networks: dict[int, MLP],
+    policy_network: dict[int, MLP] | MLP,
+    parameter_sharing: bool,
 ) -> Callable[
     [EnvState, Params, RNGKey], tuple[EnvState, Params, RNGKey, QDTransition]
 ]:
     def play_step_fn(
-        env_state: State,
-        policy_params_list: list,
+        env_state: EnvState,
+        policy_params: list[Params] | Params,
         random_key: KeyArray,
-    ):
+    ) -> tuple[EnvState, Params, RNGKey, QDTransition]:
         """
         Play an environment step and return the updated state and the transition.
         """
-        obs = env.obs(env_state)  # Dict of agent observations
-        agent_actions = {
-            agent_idx: policy_network.apply(policy_params, agent_obs)
-            for (agent_idx, policy_network), policy_params, agent_obs in zip(
-                policy_networks.items(), policy_params_list, obs.values()
-            )
-        }
+        obs = env.obs(env_state)
+        if not parameter_sharing:
+            agent_actions = {
+                agent_idx: network.apply(params, agent_obs)
+                for (agent_idx, network), params, agent_obs in zip(
+                    policy_network.items(), policy_params, obs.values()
+                )
+            }
+        else:
+            agent_actions = {
+                agent_idx: policy_network.apply(policy_params, agent_obs)
+                for (agent_idx, agent_obs) in obs.items()
+            }
 
         state_desc = env_state.info["state_descriptor"]
         next_state = env.step(env_state, agent_actions)
@@ -149,7 +152,7 @@ def make_policy_network_play_step_fn(
             next_state_desc=next_state.info["state_descriptor"],
         )
 
-        return next_state, policy_params_list, random_key, transition
+        return next_state, policy_params, random_key, transition
 
     return play_step_fn
 
@@ -158,7 +161,8 @@ def prepare_map_elites_multiagent(
     env_name: str,
     batch_size: int,
     episode_length: int,
-    policy_hidden_layer_sizes: tuple[int, ...],
+    policy_hidden_layer_sizes: list[int],
+    parameter_sharing: bool,
     iso_sigma: float,
     line_sigma: float,
     num_init_cvt_samples: int,
@@ -172,22 +176,33 @@ def prepare_map_elites_multiagent(
     # Create environment
     base_env_name = env_name.split("_")[0]
     env = environments.create(env_name, episode_length=episode_length)
-    env = MultiAgentBraxWrapper(env, env_name=base_env_name)
+    env = MultiAgentBraxWrapper(
+        env, env_name=base_env_name, parameter_sharing=parameter_sharing
+    )
     num_agents = len(env.get_action_sizes())
 
-    # Init policy networks
-    policy_networks = init_multiple_policy_networks(env, policy_hidden_layer_sizes)
-
-    # Init population of controllers
-    init_variables = init_controller_population_multiagent(
-        env, policy_networks, batch_size, random_key
-    )
+    # Init policy network/s
+    if parameter_sharing:
+        policy_network = init_policy_network(policy_hidden_layer_sizes, env.action_size)
+        init_variables = init_controller_population_single_agent(
+            env, policy_network, batch_size, random_key
+        )
+    else:
+        policy_network = {
+            agent_idx: init_policy_network(policy_hidden_layer_sizes, action_size)
+            for agent_idx, action_size in env.get_action_sizes().items()
+        }
+        init_variables = init_controller_population_multiagent(
+            env, policy_network, batch_size, random_key
+        )
 
     # Create the initial environment states
     init_states = init_environment_states(env, batch_size, random_key)
 
     # Create the play step function
-    play_step_fn = make_policy_network_play_step_fn(env, policy_networks)
+    play_step_fn = make_policy_network_play_step_fn(
+        env, policy_network, parameter_sharing
+    )
 
     # Prepare the scoring function
     bd_extraction_fn = environments.behavior_descriptor_extractor[env_name]
@@ -212,14 +227,23 @@ def prepare_map_elites_multiagent(
     variation_fn = functools.partial(
         isoline_variation, iso_sigma=iso_sigma, line_sigma=line_sigma
     )
-    mixing_emitter = MultiAgentMixingEmitter(
-        mutation_fn=None,
-        variation_fn=variation_fn,
-        variation_percentage=1.0,
-        batch_size=batch_size,
-        num_agents=num_agents,
-        agents_to_mutate=k_mutations,
-    )
+
+    if parameter_sharing:
+        mixing_emitter = MixingEmitter(
+            mutation_fn=None,
+            variation_fn=variation_fn,
+            variation_percentage=1.0,
+            batch_size=batch_size,
+        )
+    else:
+        mixing_emitter = MultiAgentMixingEmitter(
+            mutation_fn=None,
+            variation_fn=variation_fn,
+            variation_percentage=1.0,
+            batch_size=batch_size,
+            num_agents=num_agents,
+            agents_to_mutate=k_mutations,
+        )
 
     # Instantiate MAP-Elites
     map_elites = MAPElites(
@@ -250,7 +274,7 @@ def prepare_map_elites(
     env_name: str,
     batch_size: int,
     episode_length: int,
-    policy_hidden_layer_sizes: tuple[int, ...],
+    policy_hidden_layer_sizes: list[int],
     iso_sigma: float,
     line_sigma: float,
     num_init_cvt_samples: int,
@@ -264,7 +288,7 @@ def prepare_map_elites(
     env = environments.create(env_name, episode_length=episode_length)
 
     # Init policy network
-    policy_network = init_single_policy_network(env, policy_hidden_layer_sizes)
+    policy_network = init_policy_network(policy_hidden_layer_sizes, env.action_size)
 
     # Init population of controllers
     init_variables = init_controller_population_single_agent(

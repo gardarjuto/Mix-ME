@@ -16,7 +16,8 @@ DEFAULT_CONFIG = {
     "batch_size": 16,
     "episode_length": 100,
     "num_iterations": 1000,
-    "policy_hidden_layer_sizes": (64, 64),
+    "policy_hidden_layer_sizes": [64, 64],
+    "parameter_sharing": False,
     "iso_sigma": 0.005,
     "line_sigma": 0.05,
     "num_init_cvt_samples": 50000,
@@ -108,8 +109,15 @@ def parse_arguments():
     )
     parser.add_argument(
         "--policy_hidden_layer_sizes",
-        type=tuple,
+        type=int,
+        nargs="+",
         help="hidden layer sizes of the policy network/s",
+    )
+    parser.add_argument(
+        "--parameter_sharing",
+        default=None,
+        action=argparse.BooleanOptionalAction,
+        help="whether to use parameter sharing between agents",
     )
     parser.add_argument(
         "--iso_sigma",

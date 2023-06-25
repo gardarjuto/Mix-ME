@@ -16,6 +16,9 @@ def plot_2d_map(
         min_bd (float): minimum value of the behavioral descriptor
         max_bd (float): maximum value of the behavioral descriptor
     """
+    # Check if the MAP-Elites repertoire is 2D
+    if len(repertoire.descriptors[0]) != 2:
+        return
     fig, _ = plot_2d_map_elites_repertoire(
         centroids=repertoire.centroids,
         repertoire_fitnesses=repertoire.fitnesses,

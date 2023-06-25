@@ -4,8 +4,6 @@ import os
 
 
 def init_wandb(config):
-    os.environ["WANDB_RUN_GROUP"] = "experiment-" + generate_id()
-
     wandb.init(
         project="MA-QD",
         config=config,

@@ -1,6 +1,4 @@
 import wandb
-from wandb.util import generate_id
-import os
 
 
 def init_wandb(config):

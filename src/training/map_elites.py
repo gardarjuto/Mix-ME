@@ -24,6 +24,7 @@ from qdax.core.emitters.mutation_operators import isoline_variation
 from qdax.core.emitters.ma_standard_emitters import (
     NaiveMultiAgentMixingEmitter,
     RolePreservingMultiAgentMixingEmitter,
+    SharedPoolMultiAgentMixingEmitter,
 )
 from qdax.types import (
     EnvState,
@@ -41,6 +42,7 @@ EMITTERS = {
     "mixing": MixingEmitter,  # Won't work with multi-agent
     "naive": NaiveMultiAgentMixingEmitter,
     "role_preserving": RolePreservingMultiAgentMixingEmitter,
+    "shared_pool": SharedPoolMultiAgentMixingEmitter,
 }
 
 
@@ -74,7 +76,7 @@ def init_policy_network(
     return policy_network
 
 
-def init_controller_population_multiagent(
+def init_controller_population_multiple_networks(
     env: MultiAgentBraxWrapper,
     policy_networks: dict[int, MLP],
     batch_size: int,
@@ -94,7 +96,7 @@ def init_controller_population_multiagent(
     return init_variables
 
 
-def init_controller_population_single_agent(
+def init_controller_population_single_network(
     env: Env,
     policy_network: MLP,
     batch_size: int,
@@ -123,6 +125,7 @@ def make_policy_network_play_step_fn(
     env: MultiAgentBraxWrapper,
     policy_network: dict[int, MLP] | MLP,
     parameter_sharing: bool,
+    emitter_type: str,
 ) -> Callable[
     [EnvState, Params, RNGKey], tuple[EnvState, Params, RNGKey, QDTransition]
 ]:
@@ -188,14 +191,17 @@ def prepare_map_elites_multiagent(
     base_env_name = env_name.split("_")[0]
     env = environments.create(env_name, episode_length=episode_length)
     env = MultiAgentBraxWrapper(
-        env, env_name=base_env_name, parameter_sharing=parameter_sharing
+        env,
+        env_name=base_env_name,
+        parameter_sharing=parameter_sharing,
+        emitter_type=emitter_type,
     )
     num_agents = len(env.get_action_sizes())
 
     # Init policy network/s
     if parameter_sharing:
         policy_network = init_policy_network(policy_hidden_layer_sizes, env.action_size)
-        init_variables = init_controller_population_single_agent(
+        init_variables = init_controller_population_single_network(
             env, policy_network, batch_size, random_key
         )
     else:
@@ -203,7 +209,7 @@ def prepare_map_elites_multiagent(
             agent_idx: init_policy_network(policy_hidden_layer_sizes, action_size)
             for agent_idx, action_size in env.get_action_sizes().items()
         }
-        init_variables = init_controller_population_multiagent(
+        init_variables = init_controller_population_multiple_networks(
             env, policy_network, batch_size, random_key
         )
 
@@ -212,7 +218,7 @@ def prepare_map_elites_multiagent(
 
     # Create the play step function
     play_step_fn = make_policy_network_play_step_fn(
-        env, policy_network, parameter_sharing
+        env, policy_network, parameter_sharing, emitter_type
     )
 
     # Prepare the scoring function
@@ -304,7 +310,7 @@ def prepare_map_elites(
     policy_network = init_policy_network(policy_hidden_layer_sizes, env.action_size)
 
     # Init population of controllers
-    init_variables = init_controller_population_single_agent(
+    init_variables = init_controller_population_single_network(
         env, policy_network, batch_size, random_key
     )
 

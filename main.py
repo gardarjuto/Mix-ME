@@ -1,6 +1,11 @@
 import jax
 import os
-from src.utils.arguments import load_config, parse_arguments, merge_configs
+from src.utils.arguments import (
+    load_config,
+    parse_arguments,
+    merge_configs,
+    check_config,
+)
 from src.utils.logging import init_wandb
 from src.visualization.visualize import plot_2d_map
 from src.training.map_elites import (
@@ -13,11 +18,12 @@ from src.training.map_elites import (
 def main():
     args = parse_arguments()
 
-    # Load the configuration file
+    # Load the configuration file and merge it with the CLI arguments
     config = load_config(args.config)
-
-    # Override the config with the CLI arguments
     config = merge_configs(config, args)
+
+    # Check the configuration
+    check_config(config)
 
     # Initialise WandB
     init_wandb(config)

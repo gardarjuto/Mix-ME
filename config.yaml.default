@@ -4,6 +4,8 @@ seed: 42
 
 # Logging
 log_period: 10
+project_name: "MA-QD"
+entity_name: "ucl-dark"
 experiment_name: "test"
 wandb_mode: "disabled"
 
@@ -24,3 +26,4 @@ num_centroids: 1024
 min_bd: -5.0
 max_bd: 5.0
 k_mutations: 1
+emitter_type: "naive"

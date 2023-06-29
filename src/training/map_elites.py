@@ -21,7 +21,10 @@ from qdax.tasks.brax_envs import (
 from qdax.core.neuroevolution.buffers.buffer import QDTransition
 from qdax.core.neuroevolution.networks.networks import MLP
 from qdax.core.emitters.mutation_operators import isoline_variation
-from qdax.core.emitters.ma_standard_emitters import MultiAgentMixingEmitter
+from qdax.core.emitters.ma_standard_emitters import (
+    NaiveMultiAgentMixingEmitter,
+    RolePreservingMultiAgentMixingEmitter,
+)
 from qdax.types import (
     EnvState,
     Params,
@@ -32,6 +35,13 @@ from qdax.environments.multi_agent_wrappers import MultiAgentBraxWrapper
 from qdax.utils.metrics import default_qd_metrics
 
 import wandb
+
+
+EMITTERS = {
+    "mixing": MixingEmitter,  # Won't work with multi-agent
+    "naive": NaiveMultiAgentMixingEmitter,
+    "role_preserving": RolePreservingMultiAgentMixingEmitter,
+}
 
 
 def init_multiple_policy_networks(
@@ -169,6 +179,7 @@ def prepare_map_elites_multiagent(
     num_centroids: int,
     min_bd: float,
     max_bd: float,
+    emitter_type: str,
     k_mutations: int,
     random_key: KeyArray,
     **kwargs,
@@ -228,6 +239,8 @@ def prepare_map_elites_multiagent(
         isoline_variation, iso_sigma=iso_sigma, line_sigma=line_sigma
     )
 
+    emitter = EMITTERS[emitter_type]
+
     if parameter_sharing:
         mixing_emitter = MixingEmitter(
             mutation_fn=None,
@@ -236,7 +249,7 @@ def prepare_map_elites_multiagent(
             batch_size=batch_size,
         )
     else:
-        mixing_emitter = MultiAgentMixingEmitter(
+        mixing_emitter = emitter(
             mutation_fn=None,
             variation_fn=variation_fn,
             variation_percentage=1.0,

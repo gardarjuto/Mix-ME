@@ -1,11 +1,14 @@
 import argparse
 import yaml
+from src.training.map_elites import EMITTERS
 
 DEFAULT_CONFIG = {
     # Debug
     "disable_jit": False,
     "seed": 42,
     # Logging
+    "project_name": "MA-QD",
+    "entity_name": "ucl-dark",
     "experiment_name": "DEFAULT",
     "log_period": 10,
     "wandb_mode": "offline",
@@ -25,6 +28,7 @@ DEFAULT_CONFIG = {
     "min_bd": 0.0,
     "max_bd": 1.0,
     "k_mutations": 1,
+    "emitter_type": "naive",
 }
 
 
@@ -62,6 +66,16 @@ def parse_arguments():
     )
 
     # Logging
+    parser.add_argument(
+        "--project_name",
+        type=str,
+        help="name of the project",
+    )
+    parser.add_argument(
+        "--entity_name",
+        type=str,
+        help="name of the wandb entity",
+    )
     parser.add_argument(
         "--experiment_name",
         type=str,
@@ -150,6 +164,11 @@ def parse_arguments():
         help="maximum bound of the behavior descriptor",
     )
     parser.add_argument(
+        "--emitter_type",
+        type=str,
+        help="type of emitter to use",
+    )
+    parser.add_argument(
         "--k_mutations",
         type=int,
         help="number of agents to mutate each iteration",
@@ -164,3 +183,24 @@ def merge_configs(file_config, cmd_args):
     config.update({k: v for k, v in file_config.items() if v is not None})
     config.update({k: v for k, v in vars(cmd_args).items() if v is not None})
     return config
+
+
+def check_config(config):
+    # Check that the configuration is valid
+    assert config["batch_size"] > 0
+    assert config["episode_length"] > 0
+    assert config["num_iterations"] > 0
+    assert config["policy_hidden_layer_sizes"] is not None
+    assert config["iso_sigma"] > 0.0
+    assert config["line_sigma"] > 0.0
+    assert config["num_init_cvt_samples"] > 0
+    assert config["num_centroids"] > 0
+    assert config["min_bd"] < config["max_bd"]
+    assert config["emitter_type"] in EMITTERS.keys()
+    assert (
+        config["emitter_type"] in EMITTERS.keys() - "mixing"
+        or config["emitter_type"] == "mixing"
+        and config["parameter_sharing"]
+    ), "Mixing emitter only works with parameter sharing"
+    assert config["k_mutations"] > 0
+    return True

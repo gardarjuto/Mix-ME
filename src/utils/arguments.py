@@ -29,6 +29,7 @@ DEFAULT_CONFIG = {
     "max_bd": 1.0,
     "k_mutations": 1,
     "emitter_type": "naive",
+    "homogenisation_method": "concat",
 }
 
 
@@ -173,6 +174,11 @@ def parse_arguments():
         type=int,
         help="number of agents to mutate each iteration",
     )
+    parser.add_argument(
+        "--homogenisation_method",
+        type=str,
+        help="method to use for joining dimensions of heterogeneous agents (concat, max)",
+    )
     return parser.parse_args()
 
 
@@ -203,4 +209,5 @@ def check_config(config):
         and config["parameter_sharing"]
     ), "Mixing emitter only works with parameter sharing"
     assert config["k_mutations"] > 0
+    assert config["homogenisation_method"] in ["concat", "max"]
     return True

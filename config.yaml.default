@@ -27,3 +27,4 @@ min_bd: -5.0
 max_bd: 5.0
 k_mutations: 1
 emitter_type: "naive"
+homogenisation_method: "concat"

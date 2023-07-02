@@ -182,8 +182,9 @@ def prepare_map_elites_multiagent(
     num_centroids: int,
     min_bd: float,
     max_bd: float,
-    emitter_type: str,
     k_mutations: int,
+    emitter_type: str,
+    homogenisation_method: str,
     random_key: KeyArray,
     **kwargs,
 ):
@@ -195,6 +196,7 @@ def prepare_map_elites_multiagent(
         env_name=base_env_name,
         parameter_sharing=parameter_sharing,
         emitter_type=emitter_type,
+        homogenisation_method=homogenisation_method,
     )
     num_agents = len(env.get_action_sizes())
 

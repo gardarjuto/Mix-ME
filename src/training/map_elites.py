@@ -125,7 +125,6 @@ def make_policy_network_play_step_fn(
     env: MultiAgentBraxWrapper,
     policy_network: dict[int, MLP] | MLP,
     parameter_sharing: bool,
-    emitter_type: str,
 ) -> Callable[
     [EnvState, Params, RNGKey], tuple[EnvState, Params, RNGKey, QDTransition]
 ]:
@@ -202,10 +201,18 @@ def prepare_map_elites_multiagent(
 
     # Init policy network/s
     if parameter_sharing:
-        policy_network = init_policy_network(policy_hidden_layer_sizes, env.action_size)
-        init_variables = init_controller_population_single_network(
-            env, policy_network, batch_size, random_key
-        )
+        if homogenisation_method == "concat":
+            policy_network = init_policy_network(
+                policy_hidden_layer_sizes, env.action_size
+            )
+        else:
+            policy_network = init_policy_network(
+                policy_hidden_layer_sizes, env.get_action_sizes()[0]
+            )
+        init_variables = init_controller_population_multiple_networks(
+            env, {0: policy_network}, batch_size, random_key
+        )[0]
+
     else:
         policy_network = {
             agent_idx: init_policy_network(policy_hidden_layer_sizes, action_size)
@@ -220,7 +227,7 @@ def prepare_map_elites_multiagent(
 
     # Create the play step function
     play_step_fn = make_policy_network_play_step_fn(
-        env, policy_network, parameter_sharing, emitter_type
+        env, policy_network, parameter_sharing
     )
 
     # Prepare the scoring function

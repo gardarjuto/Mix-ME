@@ -17,7 +17,7 @@ multiagent: False
 
 # Hyperparameters
 batch_size: 16
-episode_length: 100
+episode_length: 300
 num_iterations: 1000
 policy_hidden_layer_sizes: !!python/list [64, 64]
 parameter_sharing: False

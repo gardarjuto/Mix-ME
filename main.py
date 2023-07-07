@@ -13,6 +13,7 @@ from src.training.map_elites import (
     prepare_map_elites,
     prepare_map_elites_multiagent,
 )
+import wandb
 
 
 def main():
@@ -51,6 +52,16 @@ def main():
         repertoire=repertoire,
         **config,
     )
+
+    # Save the repertoire
+    if config.get("save_repertoire"):
+        repertoire_path = os.path.join(
+            config["output_dir"],
+            "saved_repertoires",
+            wandb.run.name + "-" + wandb.run.id,
+        )
+        os.makedirs(repertoire_path, exist_ok=True)
+        repertoire.save(repertoire_path)
 
 
 if __name__ == "__main__":

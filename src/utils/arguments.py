@@ -6,14 +6,16 @@ DEFAULT_CONFIG = {
     # Debug
     "disable_jit": False,
     "seed": 42,
+    "output_dir": "output",
     # Logging
     "project_name": "MA-QD",
     "entity_name": "ucl-dark",
     "experiment_name": "DEFAULT",
     "log_period": 10,
     "wandb_mode": "offline",
+    "save_repertoire": False,
     # Environment
-    "env_name": "ant_omni",
+    "env_name": "halfcheetah_uni",
     "multiagent": False,
     # Hyperparameters
     "batch_size": 16,
@@ -65,6 +67,11 @@ def parse_arguments():
         type=int,
         help="seed for the random number generators",
     )
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        help="path to the output directory",
+    )
 
     # Logging
     parser.add_argument(
@@ -91,6 +98,12 @@ def parse_arguments():
         "--wandb_mode",
         type=str,
         help="mode of WandB",
+    )
+    parser.add_argument(
+        "--save_repertoire",
+        default=None,
+        action=argparse.BooleanOptionalAction,
+        help="whether to save the final MAP-Elites repertoire",
     )
 
     # Environment

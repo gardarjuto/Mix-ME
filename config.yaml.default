@@ -1,6 +1,7 @@
 # Debug
 disable_jit: False
 seed: 42
+output_dir: "output"
 
 # Logging
 log_period: 10
@@ -8,9 +9,10 @@ project_name: "MA-QD"
 entity_name: "ucl-dark"
 experiment_name: "test"
 wandb_mode: "disabled"
+save_repertoire: False
 
 # Environment
-env_name: "ant_omni"
+env_name: "halfcheetah_uni"
 multiagent: False
 
 # Hyperparameters
@@ -23,8 +25,8 @@ iso_sigma: 0.005
 line_sigma: 0.05
 num_init_cvt_samples: 50000
 num_centroids: 1024
-min_bd: -5.0
-max_bd: 5.0
+min_bd: 0.0
+max_bd: 1.0
 k_mutations: 1
 emitter_type: "naive"
 homogenisation_method: "concat"

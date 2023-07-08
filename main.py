@@ -59,9 +59,10 @@ def main():
             config["output_dir"],
             "saved_repertoires",
             wandb.run.name + "-" + wandb.run.id,
+            "/",
         )
         os.makedirs(repertoire_path, exist_ok=True)
-        repertoire.save(repertoire_path)
+        repertoire.save(path=repertoire_path)
 
 
 if __name__ == "__main__":

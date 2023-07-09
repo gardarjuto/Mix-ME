@@ -58,8 +58,7 @@ def main():
         repertoire_path = os.path.join(
             config["output_dir"],
             "saved_repertoires",
-            wandb.run.name + "-" + wandb.run.id,
-            "/",
+            wandb.run.name + "-" + wandb.run.id + "/",
         )
         os.makedirs(repertoire_path, exist_ok=True)
         repertoire.save(path=repertoire_path)

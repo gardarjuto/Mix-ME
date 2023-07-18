@@ -1,6 +1,5 @@
 import argparse
 import yaml
-from src.training.map_elites import EMITTERS
 
 DEFAULT_CONFIG = {
     # Debug
@@ -10,7 +9,7 @@ DEFAULT_CONFIG = {
     # Logging
     "project_name": "MA-QD",
     "entity_name": "ucl-dark",
-    "experiment_name": "DEFAULT",
+    "experiment_name": None,
     "log_period": 10,
     "wandb_mode": "offline",
     "save_repertoire": False,
@@ -32,6 +31,11 @@ DEFAULT_CONFIG = {
     "k_mutations": 1,
     "emitter_type": "naive",
     "homogenisation_method": "concat",
+    "eta": 10.0,
+    "mut_val_bound": 0.5,
+    "proportion_to_mutate": 0.1,
+    "variation_percentage": 0.3,
+    "crossplay_percentage": 0.3,
 }
 
 
@@ -192,6 +196,32 @@ def parse_arguments():
         type=str,
         help="method to use for joining dimensions of heterogeneous agents (concat, max)",
     )
+    parser.add_argument(
+        "--eta",
+        type=float,
+        help="eta parameter for polynomial mutation",
+    )
+    parser.add_argument(
+        "--mut_val_bound",
+        type=float,
+        help="bound for polynomial mutation (-mut_val_bound, mut_val_bound)",
+    )
+    parser.add_argument(
+        "--proportion_to_mutate",
+        type=float,
+        help="proportion of the population to mutate",
+    )
+    parser.add_argument(
+        "--variation_percentage",
+        type=float,
+        help="percentage of the population to mutate",
+    )
+    parser.add_argument(
+        "--crossplay_percentage",
+        type=float,
+        help="percentage of the population to crossplay",
+    )
+
     return parser.parse_args()
 
 
@@ -215,12 +245,6 @@ def check_config(config):
     assert config["num_init_cvt_samples"] > 0
     assert config["num_centroids"] > 0
     assert config["min_bd"] < config["max_bd"]
-    assert config["emitter_type"] in EMITTERS.keys()
-    assert (
-        config["emitter_type"] in EMITTERS.keys() - "mixing"
-        or config["emitter_type"] == "mixing"
-        and config["parameter_sharing"]
-    ), "Mixing emitter only works with parameter sharing"
     assert config["k_mutations"] > 0
     assert config["homogenisation_method"] in ["concat", "max"]
     return True

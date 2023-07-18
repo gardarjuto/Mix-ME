@@ -20,11 +20,10 @@ from qdax.tasks.brax_envs import (
 )
 from qdax.core.neuroevolution.buffers.buffer import QDTransition
 from qdax.core.neuroevolution.networks.networks import MLP
-from qdax.core.emitters.mutation_operators import isoline_variation
+from qdax.core.emitters.mutation_operators import isoline_variation, polynomial_mutation
 from qdax.core.emitters.ma_standard_emitters import (
     NaiveMultiAgentMixingEmitter,
-    RolePreservingMultiAgentMixingEmitter,
-    SharedPoolMultiAgentMixingEmitter,
+    MultiAgentEmitter,
 )
 from qdax.types import (
     EnvState,
@@ -36,14 +35,6 @@ from qdax.environments.multi_agent_wrappers import MultiAgentBraxWrapper
 from qdax.utils.metrics import default_qd_metrics
 
 import wandb
-
-
-EMITTERS = {
-    "mixing": MixingEmitter,  # Won't work with multi-agent
-    "naive": NaiveMultiAgentMixingEmitter,
-    "role_preserving": RolePreservingMultiAgentMixingEmitter,
-    "shared_pool": SharedPoolMultiAgentMixingEmitter,
-}
 
 
 def init_multiple_policy_networks(
@@ -184,6 +175,11 @@ def prepare_map_elites_multiagent(
     k_mutations: int,
     emitter_type: str,
     homogenisation_method: str,
+    eta: float,
+    mut_val_bound: float,
+    proportion_to_mutate: float,
+    variation_percentage: float,
+    crossplay_percentage: float,
     random_key: KeyArray,
     **kwargs,
 ):
@@ -212,7 +208,6 @@ def prepare_map_elites_multiagent(
         init_variables = init_controller_population_multiple_networks(
             env, {0: policy_network}, batch_size, random_key
         )[0]
-
     else:
         policy_network = {
             agent_idx: init_policy_network(policy_hidden_layer_sizes, action_size)
@@ -253,30 +248,45 @@ def prepare_map_elites_multiagent(
     variation_fn = functools.partial(
         isoline_variation, iso_sigma=iso_sigma, line_sigma=line_sigma
     )
-
-    emitter = EMITTERS[emitter_type]
+    mutation_function = functools.partial(
+        polynomial_mutation,
+        eta=eta,
+        minval=-mut_val_bound,
+        maxval=mut_val_bound,
+        proportion_to_mutate=proportion_to_mutate,
+    )
 
     if parameter_sharing:
-        mixing_emitter = MixingEmitter(
-            mutation_fn=None,
+        emitter = MixingEmitter(
+            mutation_fn=mutation_function,
             variation_fn=variation_fn,
-            variation_percentage=1.0,
+            variation_percentage=0.1,
             batch_size=batch_size,
         )
-    else:
-        mixing_emitter = emitter(
-            mutation_fn=None,
+    elif emitter_type == "naive":
+        emitter = NaiveMultiAgentMixingEmitter(
+            mutation_fn=mutation_function,
             variation_fn=variation_fn,
-            variation_percentage=1.0,
+            variation_percentage=variation_percentage,
             batch_size=batch_size,
             num_agents=num_agents,
             agents_to_mutate=k_mutations,
+        )
+    else:
+        emitter = MultiAgentEmitter(
+            mutation_fn=mutation_function,
+            variation_fn=variation_fn,
+            variation_percentage=variation_percentage,
+            crossplay_percentage=crossplay_percentage,
+            batch_size=batch_size,
+            num_agents=num_agents,
+            role_preserving=emitter_type == "role_preserving",
         )
 
     # Instantiate MAP-Elites
     map_elites = MAPElites(
         scoring_function=scoring_fn,
-        emitter=mixing_emitter,
+        emitter=emitter,
         metrics_function=metrics_function,
     )
 
@@ -309,6 +319,10 @@ def prepare_map_elites(
     num_centroids: int,
     min_bd: float,
     max_bd: float,
+    eta: float,
+    mut_val_bound: float,
+    proportion_to_mutate: float,
+    variation_percentage: float,
     random_key: KeyArray,
     **kwargs,
 ):
@@ -352,10 +366,18 @@ def prepare_map_elites(
     variation_fn = functools.partial(
         isoline_variation, iso_sigma=iso_sigma, line_sigma=line_sigma
     )
+    mutation_function = functools.partial(
+        polynomial_mutation,
+        eta=eta,
+        minval=-mut_val_bound,
+        maxval=mut_val_bound,
+        proportion_to_mutate=proportion_to_mutate,
+    )
+
     mixing_emitter = MixingEmitter(
-        mutation_fn=None,
+        mutation_fn=mutation_function,
         variation_fn=variation_fn,
-        variation_percentage=1.0,
+        variation_percentage=variation_percentage,
         batch_size=batch_size,
     )
 

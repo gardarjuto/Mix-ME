@@ -9,9 +9,9 @@ from src.utils.arguments import (
 from src.utils.logging import init_wandb
 from src.visualization.visualize import plot_2d_map
 from src.training.map_elites import (
-    run_training,
-    prepare_map_elites,
     prepare_map_elites_multiagent,
+    prepare_map_elites,
+    run_training,
 )
 import wandb
 
@@ -28,6 +28,8 @@ def main():
 
     # Initialise WandB
     init_wandb(config)
+
+    config = wandb.config
 
     # Init a random key
     random_key = jax.random.PRNGKey(config["seed"])

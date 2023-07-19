@@ -31,6 +31,9 @@ def main():
 
     config = wandb.config
 
+    if config["disable_jit"]:
+        jax.config.update("jax_disable_jit", True)
+
     # Init a random key
     random_key = jax.random.PRNGKey(config["seed"])
 

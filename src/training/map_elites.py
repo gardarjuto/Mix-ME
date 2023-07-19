@@ -260,7 +260,7 @@ def prepare_map_elites_multiagent(
         emitter = MixingEmitter(
             mutation_fn=mutation_function,
             variation_fn=variation_fn,
-            variation_percentage=0.1,
+            variation_percentage=variation_percentage,
             batch_size=batch_size,
         )
     elif emitter_type == "naive":

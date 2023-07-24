@@ -289,6 +289,7 @@ def prepare_map_elites_multiagent(
         scoring_function=scoring_fn,
         emitter=emitter,
         metrics_function=metrics_function,
+        qd_offset=reward_offset,
     )
 
     # Compute the centroids
@@ -387,6 +388,7 @@ def prepare_map_elites(
         scoring_function=scoring_fn,
         emitter=mixing_emitter,
         metrics_function=metrics_function,
+        qd_offset=reward_offset,
     )
 
     # Compute the centroids

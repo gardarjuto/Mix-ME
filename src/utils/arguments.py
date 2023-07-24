@@ -245,6 +245,5 @@ def check_config(config):
     assert config["num_init_cvt_samples"] > 0
     assert config["num_centroids"] > 0
     assert config["min_bd"] < config["max_bd"]
-    assert config["k_mutations"] > 0
     assert config["homogenisation_method"] in ["concat", "max"]
     return True

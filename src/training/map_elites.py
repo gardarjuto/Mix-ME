@@ -281,6 +281,7 @@ def prepare_map_elites_multiagent(
             batch_size=batch_size,
             num_agents=num_agents,
             role_preserving=emitter_type == "role_preserving",
+            agents_to_mutate=k_mutations,
         )
 
     # Instantiate MAP-Elites

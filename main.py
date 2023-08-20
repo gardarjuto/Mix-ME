@@ -9,6 +9,7 @@ from src.utils.arguments import (
 from src.utils.logging import init_wandb
 from src.visualization.visualize import plot_2d_map
 from src.training.map_elites import (
+    prepare_map_elites_multiagent_hanabi,
     prepare_map_elites_multiagent,
     prepare_map_elites,
     run_training,
@@ -38,7 +39,10 @@ def main():
     random_key = jax.random.PRNGKey(config["seed"])
 
     if config["multiagent"]:
-        preparation_fun = prepare_map_elites_multiagent
+        if config["env_name"] == "hanabi":
+            preparation_fun = prepare_map_elites_multiagent_hanabi
+        else:
+            preparation_fun = prepare_map_elites_multiagent
     else:
         preparation_fun = prepare_map_elites
 

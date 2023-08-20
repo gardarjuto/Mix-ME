@@ -18,6 +18,7 @@ DEFAULT_CONFIG = {
     "multiagent": False,
     # Hyperparameters
     "batch_size": 16,
+    "sample_size": 20,
     "episode_length": 100,
     "num_iterations": 1000,
     "policy_hidden_layer_sizes": [64, 64],
@@ -128,6 +129,11 @@ def parse_arguments():
         "--batch_size",
         type=int,
         help="batch size",
+    )
+    parser.add_argument(
+        "--sample_size",
+        type=int,
+        help="number of samples to average over in noisy evaluation",
     )
     parser.add_argument(
         "--episode_length",

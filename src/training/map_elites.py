@@ -169,7 +169,6 @@ def make_policy_network_play_step_fn(
 def make_policy_network_play_step_fn_hanabi(
     env: HanabiGame,
     policy_network: MLP,
-    env_params,
     **kwargs,
 ) -> Callable[
     [EnvState, Params, RNGKey], tuple[EnvState, Params, RNGKey, QDTransition]
@@ -186,22 +185,21 @@ def make_policy_network_play_step_fn_hanabi(
         # SELECT ACTION
         random_key, _rng = jax.random.split(random_key)
 
-        last_obs = env.get_obs(env_state, None)
+        last_obs = env.get_obs(env_state)
         cur_player = jnp.nonzero(env_state.cur_player_idx, size=1)[0][0]
         legal_moves = env.get_legal_moves(
             env_state.player_hands,
             env_state.fireworks,
             env_state.info_tokens,
             cur_player,
-            env_params,
         )[cur_player]
         if not isinstance(policy_params, list):
             policy_params = [policy_params]
 
         agents_logits = jnp.stack(
             [
-                policy_network.apply(policy_params, last_obs)
-                for policy_params in policy_params
+                policy_network.apply(params, last_obs[agent])
+                for agent, params in zip(env.agents, policy_params)
             ],
             axis=0,
         )
@@ -211,9 +209,10 @@ def make_policy_network_play_step_fn_hanabi(
         logits = jnp.where(legal_moves, logits, -jnp.inf)
         action = jax.random.categorical(_rng, logits, axis=-1)
 
-        obsv, env_state, reward, done, info = env.step(
-            _rng, env_state, action, env_params
-        )
+        # Set same action for all agents (only the current player will be used)
+        actions = {agent: action for agent in env.agents}
+
+        obsv, env_state, reward, done, info = env.step(_rng, env_state, actions)
 
         # Get card_knowledge from env_state
         aidx = jnp.nonzero(env_state.cur_player_idx, size=1)[0][0]
@@ -405,8 +404,6 @@ def prepare_map_elites_multiagent_hanabi(
         policy_hidden_layer_sizes, env.action_space(env.agents[0]).n
     )
 
-    env_params = env.default_params
-
     # Init population of controllers
     random_key, subkey = jax.random.split(random_key)
     keys = jax.random.split(subkey, num=num_agents * batch_size)
@@ -416,13 +413,8 @@ def prepare_map_elites_multiagent_hanabi(
         fake_batch = jnp.zeros(shape=(batch_size, env.observation_space("agent_0").n))
         init_variables.append(jax.vmap(policy_network.init)(agent_keys, fake_batch))
 
-    # Create the initial environment states
-    init_states = init_environment_states(env, batch_size, random_key)
-
     # Create the play step function
-    play_step_fn = make_policy_network_play_step_fn_hanabi(
-        env, policy_network, env_params
-    )
+    play_step_fn = make_policy_network_play_step_fn_hanabi(env, policy_network)
 
     # Prepare the scoring function
     def bd_extraction_fn(data, mask):
@@ -710,9 +702,7 @@ def prepare_map_elites(
 
     # Create the play step function
     if env_name == "hanabi":
-        play_step_fn = make_policy_network_play_step_fn_hanabi(
-            env, policy_network, env.default_params
-        )
+        play_step_fn = make_policy_network_play_step_fn_hanabi(env, policy_network)
     else:
         play_step_fn = make_policy_network_play_step_fn_brax(env, policy_network)
 

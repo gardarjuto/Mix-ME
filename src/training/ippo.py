@@ -23,7 +23,7 @@ from gymnax.wrappers.purerl import LogWrapper, FlattenObservationWrapper
 import smax
 from smax.wrappers.smaxbaselines import LogWrapper
 from smax.wrappers.gymnax import GymnaxToSMAX
-from smaxbaselines.IPPO.utils import batchify, unbatchify
+from baselines.IPPO.utils import batchify, unbatchify
 
 import matplotlib.pyplot as plt
 import wandb

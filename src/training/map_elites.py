@@ -42,13 +42,14 @@ import wandb
 
 def init_multiple_policy_networks(
     env: MultiAgentBraxWrapper,
-    policy_hidden_layer_sizes: list[int],
+    policy_hidden_layer_size: int,
 ) -> dict[int, MLP]:
     action_sizes = env.get_action_sizes()
 
     policy_networks = {
         agent_idx: MLP(
-            layer_sizes=tuple(policy_hidden_layer_sizes) + (action_size,),
+            layer_sizes=(policy_hidden_layer_size, policy_hidden_layer_size)
+            + (action_size,),
             kernel_init=jax.nn.initializers.lecun_uniform(),
             final_activation=jnp.tanh,
         )
@@ -58,10 +59,10 @@ def init_multiple_policy_networks(
 
 
 def init_policy_network(
-    policy_hidden_layer_sizes: list[int],
+    policy_hidden_layer_size: int,
     action_size: int,
 ) -> MLP:
-    layer_sizes = tuple(policy_hidden_layer_sizes) + (action_size,)
+    layer_sizes = (policy_hidden_layer_size, policy_hidden_layer_size) + (action_size,)
     policy_network = MLP(
         layer_sizes=layer_sizes,
         kernel_init=jax.nn.initializers.lecun_uniform(),
@@ -376,7 +377,7 @@ def prepare_map_elites_multiagent_hanabi(
     batch_size: int,
     sample_size: int,
     episode_length: int,
-    policy_hidden_layer_sizes: list[int],
+    policy_hidden_layer_size: int,
     parameter_sharing: bool,
     iso_sigma: float,
     line_sigma: float,
@@ -401,7 +402,7 @@ def prepare_map_elites_multiagent_hanabi(
 
     # Init policy network
     policy_network = init_policy_network(
-        policy_hidden_layer_sizes, env.action_space(env.agents[0]).n
+        policy_hidden_layer_size, env.action_space(env.agents[0]).n
     )
 
     # Init population of controllers
@@ -510,7 +511,7 @@ def prepare_map_elites_multiagent(
     env_name: str,
     batch_size: int,
     episode_length: int,
-    policy_hidden_layer_sizes: list[int],
+    policy_hidden_layer_size: int,
     parameter_sharing: bool,
     iso_sigma: float,
     line_sigma: float,
@@ -545,18 +546,18 @@ def prepare_map_elites_multiagent(
     if parameter_sharing:
         if homogenisation_method == "concat":
             policy_network = init_policy_network(
-                policy_hidden_layer_sizes, env.action_size
+                policy_hidden_layer_size, env.action_size
             )
         else:
             policy_network = init_policy_network(
-                policy_hidden_layer_sizes, env.get_action_sizes()[0]
+                policy_hidden_layer_size, env.get_action_sizes()[0]
             )
         init_variables = init_controller_population_multiple_networks(
             env, {0: policy_network}, batch_size, random_key
         )[0]
     else:
         policy_network = {
-            agent_idx: init_policy_network(policy_hidden_layer_sizes, action_size)
+            agent_idx: init_policy_network(policy_hidden_layer_size, action_size)
             for agent_idx, action_size in env.get_action_sizes().items()
         }
         init_variables = init_controller_population_multiple_networks(
@@ -661,7 +662,7 @@ def prepare_map_elites(
     batch_size: int,
     sample_size: int,
     episode_length: int,
-    policy_hidden_layer_sizes: list[int],
+    policy_hidden_layer_size: int,
     iso_sigma: float,
     line_sigma: float,
     num_init_cvt_samples: int,
@@ -685,7 +686,7 @@ def prepare_map_elites(
     action_size = (
         env.action_size if env_name != "hanabi" else env.action_space(env.agents[0]).n
     )
-    policy_network = init_policy_network(policy_hidden_layer_sizes, action_size)
+    policy_network = init_policy_network(policy_hidden_layer_size, action_size)
 
     # Init population of controllers
     observation_size = (

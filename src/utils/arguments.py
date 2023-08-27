@@ -21,7 +21,7 @@ DEFAULT_CONFIG = {
     "sample_size": 20,
     "episode_length": 100,
     "num_iterations": 1000,
-    "policy_hidden_layer_sizes": [64, 64],
+    "policy_hidden_layer_size": 64,
     "parameter_sharing": False,
     "iso_sigma": 0.005,
     "line_sigma": 0.05,
@@ -146,10 +146,9 @@ def parse_arguments():
         help="number of iterations to run",
     )
     parser.add_argument(
-        "--policy_hidden_layer_sizes",
+        "--policy_hidden_layer_size",
         type=int,
-        nargs="+",
-        help="hidden layer sizes of the policy network/s",
+        help="size of the hidden layers of the policy network/s",
     )
     parser.add_argument(
         "--parameter_sharing",
@@ -245,7 +244,7 @@ def check_config(config):
     assert config["batch_size"] > 0
     assert config["episode_length"] > 0
     assert config["num_iterations"] > 0
-    assert config["policy_hidden_layer_sizes"] is not None
+    assert config["policy_hidden_layer_size"] > 0
     assert config["iso_sigma"] > 0.0
     assert config["line_sigma"] > 0.0
     assert config["num_init_cvt_samples"] > 0

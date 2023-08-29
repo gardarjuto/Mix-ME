@@ -942,4 +942,3 @@ def evaluate_adaptation(
             "adaptation_fitness": jnp.max(median_fitnesses),
         }
     )
-    print(jnp.max(median_fitnesses))

@@ -37,6 +37,10 @@ DEFAULT_CONFIG = {
     "proportion_to_mutate": 0.1,
     "variation_percentage": 0.3,
     "crossplay_percentage": 0.3,
+    # Adaptation
+    "adaptation_name": None,
+    "adaptation_idx": None,
+    "adaptation_eval_num": 100,
 }
 
 
@@ -225,6 +229,22 @@ def parse_arguments():
         "--crossplay_percentage",
         type=float,
         help="percentage of the population to crossplay",
+    )
+    # Adaptation
+    parser.add_argument(
+        "--adaptation_name",
+        type=str,
+        help="name of the adaptation to evaluate",
+    )
+    parser.add_argument(
+        "--adaptation_idx",
+        type=int,
+        help="index of the adaptation to evaluate",
+    )
+    parser.add_argument(
+        "--adaptation_eval_num",
+        type=int,
+        help="number of evaluations to run for adaptation",
     )
 
     return parser.parse_args()

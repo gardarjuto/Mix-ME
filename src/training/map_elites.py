@@ -39,6 +39,8 @@ from smax.environments.hanabi import HanabiGame
 
 import wandb
 
+from src.utils.generalisation_constants import ADAPTATION_CONSTANTS
+
 
 def init_multiple_policy_networks(
     env: MultiAgentBraxWrapper,
@@ -842,3 +844,102 @@ def run_training(
         wandb.log(logged_metrics, step=1 + i * log_period)
 
     return repertoire, emitter_state, random_key, all_metrics
+
+
+def evaluate_adaptation(
+    repertoire: MapElitesRepertoire,
+    adaptation_eval_num: int,
+    env_name: str,
+    adaptation_name: str,
+    adaptation_idx: int,
+    episode_length: int,
+    policy_hidden_layer_size: int,
+    parameter_sharing: bool,
+    emitter_type: str,
+    homogenisation_method: str,
+    multiagent: bool,
+    random_key: KeyArray,
+    **kwargs,
+):
+    base_env_name = env_name.split("_")[0]
+
+    adaptation_constants = ADAPTATION_CONSTANTS[adaptation_name]
+    adaptation_constants_env = adaptation_constants[env_name]
+
+    env_kwargs = {}
+    env_kwargs[adaptation_name] = jax.tree_map(
+        lambda x: x[adaptation_idx], adaptation_constants_env
+    )
+
+    eval_env = environments.create(
+        env_name=env_name,
+        batch_size=None,
+        episode_length=episode_length,
+        auto_reset=True,
+        eval_metrics=True,
+        **env_kwargs,
+    )
+    if multiagent:
+        eval_env = MultiAgentBraxWrapper(
+            eval_env,
+            env_name=base_env_name,
+            parameter_sharing=parameter_sharing,
+            emitter_type=emitter_type,
+            homogenisation_method=homogenisation_method,
+        )
+        policy_network = init_multiple_policy_networks(
+            eval_env, policy_hidden_layer_size
+        )
+        play_step_fn = make_policy_network_play_step_fn(
+            eval_env, policy_network, parameter_sharing
+        )
+    else:
+        policy_network = init_policy_network(
+            policy_hidden_layer_size, eval_env.action_size
+        )
+        play_step_fn = make_policy_network_play_step_fn_brax(eval_env, policy_network)
+
+    bd_extraction_fn = environments.behavior_descriptor_extractor[env_name]
+    scoring_fn = functools.partial(
+        scoring_function,
+        episode_length=episode_length,
+        play_step_fn=play_step_fn,
+        behavior_descriptor_extractor=bd_extraction_fn,
+    )
+
+    scoring_fn = jax.jit(scoring_fn)
+    reset_fn = jax.jit(jax.vmap(eval_env.reset))
+
+    # Extract the policies
+    policies = jax.tree_map(
+        lambda x: x[repertoire.fitnesses != -jnp.inf], repertoire.genotypes
+    )
+    num_policies = jax.tree_util.tree_leaves(policies)[0].shape[0]
+
+    # Define a helper function to evaluate policies
+    @jax.jit
+    def evaluate_policies_helper(random_key):
+        keys = jax.random.split(random_key, num=num_policies)
+        init_states = reset_fn(keys)
+        eval_fitnesses, descriptors, extra_scores, random_key = scoring_fn(
+            policies, random_key, init_states
+        )
+        return eval_fitnesses
+
+    # Generate random keys for each evaluation
+    random_key, subkey = jax.random.split(random_key)
+    keys = jax.random.split(subkey, num=adaptation_eval_num)
+
+    # Parallelize the evaluation
+    eval_fitnesses = jax.vmap(evaluate_policies_helper)(keys)
+
+    # Compute the median fitness for each policy over its states
+    median_fitnesses = jnp.median(eval_fitnesses, axis=0)
+
+    # Report the highest median fitness
+    wandb.log(
+        {
+            "adaptation_fitness": jnp.max(median_fitnesses),
+        }
+    )
+    print(jnp.max(median_fitnesses))

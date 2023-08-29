@@ -13,6 +13,7 @@ from src.training.map_elites import (
     prepare_map_elites_multiagent,
     prepare_map_elites,
     run_training,
+    evaluate_adaptation,
 )
 import wandb
 
@@ -71,6 +72,14 @@ def main():
         )
         os.makedirs(repertoire_path, exist_ok=True)
         repertoire.save(path=repertoire_path)
+
+    # Evaluate adaptation
+    if config.get("adaptation_name"):
+        evaluate_adaptation(
+            repertoire=repertoire,
+            random_key=random_key,
+            **config,
+        )
 
 
 if __name__ == "__main__":

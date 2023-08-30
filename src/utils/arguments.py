@@ -38,8 +38,7 @@ DEFAULT_CONFIG = {
     "variation_percentage": 0.3,
     "crossplay_percentage": 0.3,
     # Adaptation
-    "adaptation_name": None,
-    "adaptation_idx": None,
+    "adaptation": False,
     "adaptation_eval_num": 100,
 }
 
@@ -232,14 +231,10 @@ def parse_arguments():
     )
     # Adaptation
     parser.add_argument(
-        "--adaptation_name",
-        type=str,
-        help="name of the adaptation to evaluate",
-    )
-    parser.add_argument(
-        "--adaptation_idx",
-        type=int,
-        help="index of the adaptation to evaluate",
+        "--adaptation",
+        default=None,
+        action=argparse.BooleanOptionalAction,
+        help="whether to run adaptation",
     )
     parser.add_argument(
         "--adaptation_eval_num",

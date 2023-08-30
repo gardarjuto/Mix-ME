@@ -74,7 +74,7 @@ def main():
         repertoire.save(path=repertoire_path)
 
     # Evaluate adaptation
-    if config.get("adaptation_name"):
+    if config.get("adaptation"):
         evaluate_adaptation(
             repertoire=repertoire,
             random_key=random_key,

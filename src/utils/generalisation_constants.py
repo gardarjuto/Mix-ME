@@ -4,25 +4,25 @@ import numpy as np
 
 ACTUATOR_UPDATES = {
     "walker2d_uni": {
-        "thigh_left_joint": np.array([0.25 * i for i in range(20)]),
-        "leg_left_joint": np.array([0.25 * i for i in range(20)]),
-        "foot_left_joint": np.array([0.25 * i for i in range(20)]),
+        "thigh_left_joint": np.array([0.5 * i for i in range(10)]),
+        "leg_left_joint": np.array([0.5 * i for i in range(10)]),
+        "foot_left_joint": np.array([0.5 * i for i in range(10)]),
     },
     "ant_uni": {
-        "$ Torso_Aux 4": np.array([0.25 * i for i in range(20)]),
-        "Aux 4_$ Body 13": np.array([0.25 * i for i in range(20)]),
+        "$ Torso_Aux 4": np.array([0.5 * i for i in range(10)]),
+        "Aux 4_$ Body 13": np.array([0.5 * i for i in range(10)]),
     },
     "halfcheetah_uni": {
-        "fthigh": np.array([0.25 * i for i in range(20)]),
-        "fshin": np.array([0.25 * i for i in range(20)]),
-        "ffoot": np.array([0.25 * i for i in range(20)]),
+        "fthigh": np.array([0.5 * i for i in range(10)]),
+        "fshin": np.array([0.5 * i for i in range(10)]),
+        "ffoot": np.array([0.5 * i for i in range(10)]),
     },
 }
 
 GRAVITY_MULTIPLIERS = {
-    "walker2d_uni": np.array([0.25 * (i + 1) for i in range(20)]),
-    "ant_uni": np.array([0.25 * (i + 1) for i in range(20)]),
-    "halfcheetah_uni": np.array([0.25 * (i + 1) for i in range(20)]),
+    "walker2d_uni": np.array([0.5 * (i + 0.5) for i in range(10)]),
+    "ant_uni": np.array([0.5 * (i + 0.5) for i in range(10)]),
+    "halfcheetah_uni": np.array([0.5 * (i + 0.5) for i in range(10)]),
 }
 
 

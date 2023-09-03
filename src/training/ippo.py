@@ -302,9 +302,12 @@ def make_train(config):
         _jit_update_step = jax.jit(_update_step)
         log_steps = int(config["NUM_UPDATES"] // config["log_period"])
 
-        for step in range(log_steps):
+        for step in range(1, log_steps + 1):
             runner_state, metric = jax.lax.scan(
                 _jit_update_step, runner_state, None, config["log_period"]
+            )
+            total_env_steps = (
+                step * config["log_period"] * config["NUM_STEPS"] * config["NUM_ENVS"]
             )
 
             # LOGGING
@@ -313,7 +316,7 @@ def make_train(config):
                 {
                     "return": returns,
                 },
-                step=step * config["log_period"] * config["NUM_STEPS"],
+                step=total_env_steps,
             )
 
         return {"runner_state": runner_state, "metrics": metric}

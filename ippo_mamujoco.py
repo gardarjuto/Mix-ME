@@ -19,6 +19,8 @@ import matplotlib.pyplot as plt
 
 import wandb
 
+from src.utils.logging import init_wandb
+
 
 class ActorCritic(nn.Module):
     action_dim: Sequence[int]
@@ -324,7 +326,11 @@ if __name__ == "__main__":
         "ENV_NAME": "ant_4x2",  # Q: Do the versions correspond to internal or external?
         "ENV_KWARGS": {},
         "ANNEAL_LR": True,
+        "project_name": "IPPO-mamujoco",
+        "entity_name": "ucl-dark",
+        "wandb_mode": "online",
     }
+    init_wandb(config)
 
     rng = jax.random.PRNGKey(30)
     train_jit = make_train(config)

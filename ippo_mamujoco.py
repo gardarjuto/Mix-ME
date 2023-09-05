@@ -326,6 +326,7 @@ if __name__ == "__main__":
         "ENV_NAME": "ant_4x2",  # Q: Do the versions correspond to internal or external?
         "ENV_KWARGS": {},
         "ANNEAL_LR": True,
+        "LOG_PERIOD": 10,
         "project_name": "IPPO-mamujoco",
         "entity_name": "ucl-dark",
         "wandb_mode": "online",

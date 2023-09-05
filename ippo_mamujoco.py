@@ -279,7 +279,7 @@ def make_train(config):
             rng = update_state[-1]
 
             runner_state = (train_state, env_state, last_obs, rng)
-            return runner_state, metric
+            return runner_state, (metric, loss_info)
 
         rng, _rng = jax.random.split(rng)
         runner_state = (train_state, env_state, obsv, _rng)
@@ -287,7 +287,7 @@ def make_train(config):
         log_steps = int(config["NUM_UPDATES"] // config["LOG_PERIOD"])
 
         for step in range(1, log_steps + 1):
-            runner_state, metric = jax.lax.scan(
+            runner_state, (metric, loss_info) = jax.lax.scan(
                 _jit_update_step, runner_state, None, config["LOG_PERIOD"]
             )
             total_env_steps = (
@@ -299,8 +299,13 @@ def make_train(config):
             wandb.log(
                 {
                     "return": returns,
+                    "value_loss": loss_info[1][0].mean(),
+                    "policy_loss": loss_info[1][1].mean(),
+                    "entropy": loss_info[1][2].mean(),
+                    "total_loss": loss_info[0].mean(),
+                    "total_env_steps": total_env_steps,
                 },
-                step=total_env_steps,
+                step=step,
             )
 
         # return {"runner_state": runner_state, "metrics": metric}
@@ -311,8 +316,8 @@ def make_train(config):
 if __name__ == "__main__":
     config = {
         "LR": 2.5e-4,
-        "NUM_ENVS": 2048,
-        "NUM_STEPS": 10,
+        "NUM_ENVS": 128,
+        "NUM_STEPS": 300,
         "TOTAL_TIMESTEPS": 2e7,
         "UPDATE_EPOCHS": 4,
         "NUM_MINIBATCHES": 4,

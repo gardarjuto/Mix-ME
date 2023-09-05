@@ -6,7 +6,7 @@ from src.utils.arguments_ippo import (
     merge_configs,
 )
 from src.utils.logging import init_wandb
-from src.training.ippo import make_train
+from src.training.ippo_mamujoco import make_train
 
 import wandb
 
